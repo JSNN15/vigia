@@ -1,67 +1,95 @@
 # Vigía PPE
 
-**Watches site cameras, detects people working without a hard hat, alerts the supervisor with the photo and writes the shift report. The AI runs on site: images never leave the operation.**
+**Is everyone wearing their PPE? Photo, camera or screen: NVIDIA AI checks each worker against the sector's requirements (hard hat, gloves, glasses, vest, boots, harness, clothing) and writes the compliance report. For continuous video on site, a custom detector runs locally, with no cloud.**
 
 [![Open the tool](https://img.shields.io/badge/Try%20it-jsnn15.github.io%2Fvigia-ffb020?style=for-the-badge)](https://jsnn15.github.io/vigia/)
-![YOLOv8](https://img.shields.io/badge/YOLOv8-custom%20detector-111?style=flat-square)
-![ONNX Runtime Web](https://img.shields.io/badge/ONNX%20Runtime-WebGPU-555?style=flat-square)
+![NVIDIA Nemotron VL](https://img.shields.io/badge/NVIDIA-Nemotron%20VL-76b900?style=flat-square&logo=nvidia&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-local%20detector-111?style=flat-square)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)
 
 [Español](README.md) · **English**
 
 > The interface is in Spanish.
 
-<a href="https://jsnn15.github.io/vigia/app.html#sala"><img src="docs/demo.gif" alt="Control room with four site cameras, detected hard hats, compliance per camera and incidents" width="100%"></a>
+<a href="https://jsnn15.github.io/vigia/"><img src="docs/demo.gif" alt="The AI marks each person with their missing PPE and fills the compliance matrix" width="100%"></a>
 
 ## The problem
 
-A supervisor cannot watch four cameras for a whole shift. Violations are found when someone reviews the footage, after something already happened.
+PPE checks are done by eye, person by person, on paper checklists. A classic detector sees hard hats, but not gloves, glasses, harnesses or whether clothing fits the task, and each sector requires something different.
 
-## How it works
+## Two modes, two architectures
 
-<img src="docs/flow.svg" alt="Cameras, local YOLOv8 detector, face blurring, alert and report" width="100%">
+| | AI review (main page) | Real-time control room |
+|---|---|---|
+| Checks | All sector PPE, per person, plus their task | Hard hat |
+| How | NVIDIA Nemotron VL, on demand or every 10 s | Custom YOLOv8 in the browser, several times per second |
+| Source | Photo, phone/PC camera, or a shared tab playing a video | 4 site cameras or your own camera |
+| Runs on | NVIDIA API via [nv-gateway](https://github.com/JSNN15/nv-gateway) | The site computer, no cloud |
+| For | Audits, planned inspections, reports | Continuous watch and instant alerts |
+
+## AI review
+
+<img src="docs/flow.svg" alt="Photo, camera or screen; sector; Nemotron VL; PPE matrix; report" width="100%">
 
 ```mermaid
-flowchart LR
-    C1[CAM 01] & C2[CAM 02] & C3[CAM 03] & C4[CAM 04] --> D["YOLOv8 detector<br/>ONNX Runtime Web · WebGPU<br/>on the site computer"]
-    D --> P[Faces blurred]
-    P --> R{Person without hard hat?}
-    R -->|yes| A["Alert to supervisor<br/>with the photo"]
-    R --> K["Compliance per camera<br/>and shift incidents"]
-    A --> K
-    K --> I[Printable shift report]
+sequenceDiagram
+    autonumber
+    participant U as Safety officer
+    participant P as Web page
+    participant G as nv-gateway
+    participant N as Nemotron VL
+    U->>P: Picks a sector, takes a photo, opens the camera or shares a video
+    P->>G: POST /epp {image, sector}
+    G->>G: Loads the sector's PPE list (server-side)
+    G->>N: Safety-expert prompt (Chilean DS 594) + list + image
+    N-->>G: Per person: box, task, status of each item, risk and action
+    G-->>P: Validated JSON
+    P->>U: Marked people, compliance matrix and printable report
 ```
 
-## Results
+**PPE by sector**
 
-Evaluated on **200 photos the model never saw** (100 with a violation, 100 without), the same set used to test NVIDIA vision models in [the PPE study](https://jsnn15.github.io/ia-epp/):
+| Sector | Checked |
+|---|---|
+| Construction | hard hat, vest, boots, gloves, glasses, harness at height |
+| Mining | hard hat, vest, boots, glasses, gloves, hearing and respiratory protection by area |
+| Electrical | dielectric hard hat, gloves, arc face shield, flame-resistant clothing, dielectric boots, harness on poles |
+| Welding | welding mask, glasses, leather gloves, FR clothing, boots, hearing protection when grinding |
+| Food | hairnet, mask, gloves, clean clothing, boots |
+| Agriculture | gloves, respirator and glasses with agrochemicals, long sleeves, boots, sun protection |
+| Industrial | hard hat, glasses, gloves, boots, vest, hearing protection with noise |
 
-| | Violations detected | False alarms in 100 clean photos |
-|---|---|---|
-| **Vigía (custom YOLOv8, local)** | **93 of 100** | **2** |
-| Best NVIDIA vision model tested (cloud) | 100 of 100 | 25 |
+Each item comes back as **worn, missing, misused, not visible or not applicable**. "Not visible" stops the model from guessing; "not applicable" only applies to conditional items (a harness when not working at height). The compliance percentage counts only what can be verified.
 
-A general-purpose API model catches everything but floods the supervisor with false alerts. A task-specific detector running on site gives 12× fewer false alarms and sends no images to the internet.
+**Camera and video.** The phone, tablet or PC camera opens in the same page. *Pantalla o video* shares a browser tab (for example a YouTube video of a job site) and the AI reviews the frame on screen, on demand or every 10 s. Works in desktop Chrome, Edge or Firefox.
 
-## Privacy
+## Real-time control room (local)
 
-Faces are blurred before any image is shown or stored. The detector runs in the site computer's browser: there is no server receiving video.
+<img src="docs/sala.gif" alt="Control room with four cameras and detected hard hats" width="100%">
+
+Custom YOLOv8 detector running in the site computer's browser (ONNX Runtime Web, WebGPU). On 200 unseen photos it caught 93 of 100 violations with 2 false alarms in 100 clean photos; the best NVIDIA vision model tested gave 25 ([full study](https://jsnn15.github.io/ia-epp/)). Faces are blurred before display or storage.
+
+## Limits
+
+- The AI only sees the image: it cannot confirm PPE certification, size or internal condition.
+- Distant or occluded people end up mostly "not visible". That is intended: better than guessing.
+- Boxes are approximate. The report supports the safety officer; it does not replace on-site inspection.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `index.html` | Landing page. |
-| `app.html`, `app.js` | Control room (`#sala`) and your-own-camera mode (`#vivo`). |
-| `det.js` | Preprocessing, ONNX inference and non-max suppression. |
-| `model.onnx.part0`, `.part1` | Detector weights split in two (GitHub file-size limit). |
-| `frames/`, `frames.json` | Demo frames with blurred faces. |
+| `index.html` | AI review: sectors, photo, camera, screen, matrix and report. |
+| `s/` | 12 sample photos with cached results. |
+| `app.html`, `app.js`, `det.js` | Real-time control room and own-camera mode (local detector). |
+| `model.onnx.part0`, `.part1` | Local detector weights. |
+| `frames/`, `frames.json` | Control-room frames with blurred faces. |
 
 ## Licenses and credits
 
-- Detector trained with **Ultralytics YOLOv8 (AGPL-3.0)**, so this repository is AGPL-3.0. Closed commercial use needs an Ultralytics license or a different detector.
-- Demo photos: public **Hard Hat Workers** dataset (CC0), faces anonymized.
-- Inference with ONNX Runtime Web (MIT).
+- Local detector trained with **Ultralytics YOLOv8 (AGPL-3.0)**, hence the AGPL-3.0 license.
+- AI-review sample photos: Flickr and rawpixel via Openverse (CC BY 2.0 and CC0); authors listed in the page footer.
+- Control-room frames: Hard Hat Workers (CC0), faces anonymized.
 
 ---
 

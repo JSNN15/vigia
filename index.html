@@ -4,185 +4,358 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vigía EPP</title>
-<meta name="description" content="Vigía EPP detecta en tiempo real a las personas sin casco en las cámaras de una faena, avisa al supervisor y genera el informe de turno. La IA corre en el equipo, sin enviar imágenes a la nube.">
-<meta property="og:title" content="Vigía EPP · cada persona sin casco, detectada al instante">
-<meta property="og:description" content="IA que mira las cámaras de la faena, avisa al supervisor y escribe el informe de turno. Pruébala con la cámara de tu celular.">
-<meta property="og:image" content="https://jsnn15.github.io/img/vigia.jpg">
+<meta name="description" content="Foto, cámara o pantalla: la IA de NVIDIA revisa el EPP de cada persona según el sector (casco, guantes, lentes, chaleco, calzado, arnés, ropa) y arma el reporte de cumplimiento.">
+<meta property="og:title" content="Vigía EPP · revisión de EPP por persona con IA de NVIDIA">
+<meta property="og:description" content="Casco, guantes, lentes, chaleco, calzado, arnés y ropa según el sector. La IA revisa a cada persona y arma el reporte de cumplimiento.">
+<meta property="og:image" content="https://jsnn15.github.io/vigia/docs/epp.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#0a0d11;--ink2:#121820;--paper:#f4f5f6;--card:#fff;--line:#dde1e5;--fg:#161b21;--muted:#5b6570;--acc:#f5b301;--acc-ink:#8a6400;--bad:#e5362c;--ok:#1f9d55;--on:#e9eef2;--on-m:#a3afba;
-  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--sans:"Work Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:light}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#0f1317;--card:#161c22;--line:#28313a;--fg:#e6eaee;--muted:#9aa5af;--acc-ink:#f5b301;color-scheme:dark}}
-:root[data-theme="dark"]{--paper:#0f1317;--card:#161c22;--line:#28313a;--fg:#e6eaee;--muted:#9aa5af;--acc-ink:#f5b301;color-scheme:dark}
+:root{--bg:#0a0b0d;--panel:#121418;--panel2:#181b21;--line:#262b33;--fg:#ebeef2;--muted:#959cab;--acc:#ffb020;--nv:#76b900;--alto:#ff4d3d;--medio:#f5a524;--bajo:#3ccf7a;--nv2:#4fd3ef;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--sans:"Work Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:dark}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--paper);color:var(--fg);font-family:var(--sans);font-size:17px;line-height:1.55}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.5}
 a{color:inherit}
-.in{max-width:72rem;margin-inline:auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
-nav.top{background:var(--ink);color:var(--on)}
-nav.top .in{display:flex;justify-content:space-between;align-items:center;padding-block:12px;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:600}
-.brand svg{width:28px;height:28px}
-nav.top a.s{font-family:var(--mono);font-size:.78rem;color:var(--on-m);text-decoration:none}
-.hero{background:var(--ink);color:var(--on);padding:30px 0 56px;position:relative;overflow:hidden}
-.hero .in{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:40px;align-items:center}
-@media (max-width:900px){.hero .in{grid-template-columns:1fr}}
-.kick{font-family:var(--mono);font-size:.76rem;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
-.hero h1{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(2.8rem,7.5vw,5.4rem);line-height:.9;margin:14px 0 16px;letter-spacing:.005em}
-.hero h1 em{font-style:normal;color:var(--acc)}
-.hero p.sub{font-size:1.15rem;color:var(--on-m);max-width:40ch;margin:0}
-.ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
-.ctas a{text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:600;font-size:.98rem;border:1px solid #3a4550;color:var(--on)}
-.ctas a.p{background:var(--acc);border-color:var(--acc);color:#1a1300}
-.ctas a:hover{border-color:var(--acc)}
-.demo{position:relative;border-radius:12px;overflow:hidden;border:1px solid #2a3540;background:#000;box-shadow:0 20px 60px #0009}
-.demo canvas{display:block;width:100%;aspect-ratio:1/1}
-.demo .hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;padding:8px 10px;font-family:var(--mono);font-size:.74rem;background:linear-gradient(#000b,#0000);color:#fff}
-.demo .alert{position:absolute;left:10px;right:10px;bottom:10px;background:#c62a22;color:#fff;font-weight:600;padding:10px 12px;border-radius:8px;font-size:.95rem;transform:translateY(140%);transition:transform .35s ease}
-.demo .alert.show{transform:none}
-.rec{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff3b30;margin-right:6px;animation:b 1.2s steps(2,start) infinite}
-@keyframes b{to{visibility:hidden}}
-.demo .cap{position:absolute;right:10px;top:30px;font-family:var(--mono);font-size:.7rem;color:#ffffffb0}
-.stats{background:var(--ink2);color:var(--on)}
-.stats .in{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-block:22px}
-@media (max-width:760px){.stats .in{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.stats b{display:block;font-family:var(--display);font-size:2.3rem;line-height:1;color:var(--acc)}
-.stats span{font-size:.85rem;color:var(--on-m)}
-section.blk{padding:64px 0 10px}
-h2{font-family:var(--display);text-transform:uppercase;font-size:clamp(2rem,4.6vw,2.9rem);line-height:.95;margin:0 0 10px;letter-spacing:.01em}
-.lead{color:var(--muted);max-width:60ch;margin:0 0 26px;font-size:1.05rem}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
-.card .n{font-family:var(--mono);font-size:.78rem;color:var(--acc-ink);letter-spacing:.08em}
-.card h3{margin:6px 0 6px;font-size:1.08rem}
-.card p{margin:0;color:var(--muted);font-size:.95rem}
-.pain .card{border-top:3px solid var(--bad)}
-.feat .card{border-top:3px solid var(--acc)}
-.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,18rem),1fr));gap:16px}
-.steps .card h3::before{counter-increment:s;content:counter(s);display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--acc);color:#1a1300;font-family:var(--mono);font-size:.9rem;margin-right:10px}
-.proof{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
-@media (max-width:860px){.proof{grid-template-columns:1fr}}
-table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left}
-th{font-size:.78rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
-tr.me td{background:color-mix(in srgb,var(--acc) 14%,transparent);font-weight:600}
-.cta{background:var(--ink);color:var(--on);margin-top:70px;padding:56px 0}
-.cta .in{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:30px;align-items:center}
-@media (max-width:860px){.cta .in{grid-template-columns:1fr}}
-.cta h2{color:#fff}
-.cta p{color:var(--on-m);margin:0}
-footer{padding:22px 0 40px;font-size:.82rem;color:var(--muted)}
-footer .in{display:flex;flex-direction:column;gap:6px}
-@media (prefers-reduced-motion:reduce){.rec{animation:none}.demo .alert{transition:none}}
+button{font:inherit}
+.in{max-width:84rem;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+nav{border-bottom:1px solid var(--line)}
+nav .in{display:flex;justify-content:space-between;align-items:center;padding-block:10px;gap:12px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;text-decoration:none}
+nav .r{display:flex;gap:14px;align-items:center}
+nav a.s{font-family:var(--mono);font-size:.76rem;color:var(--muted);text-decoration:none}
+nav a.s:hover{color:var(--fg)}
+@media (max-width:640px){nav .lg{display:none}}
+header .in{padding-block:22px 12px;display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:14px}
+h1{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,5vw,3.6rem);line-height:.9;margin:0}
+h1 em{font-style:normal;color:var(--acc)}
+.sub{color:var(--muted);margin:6px 0 0;max-width:60ch}
+.nvb{font-family:var(--mono);font-size:.72rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:4px 8px;white-space:nowrap}
+.nvb b{color:var(--nv)}
+.secs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font-size:.84rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.chip.on{border-color:var(--acc);color:var(--fg);background:#2a1e05}
+.chip svg{opacity:.8}
+.req{font-size:.78rem;color:var(--muted);margin:-2px 0 10px}
+.req b{color:var(--fg);font-weight:500}
+.tool{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;padding-bottom:18px;align-items:start}
+@media (max-width:960px){.tool{grid-template-columns:minmax(0,1fr)}}
+.stage{position:relative;background:#000;border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:340px;display:grid;place-items:center}
+.stage canvas{display:block;max-width:100%;height:auto;max-height:74vh;width:auto}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.drop{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:var(--muted);border:2px dashed transparent;border-radius:12px}
+.drop.over{border-color:var(--acc);background:rgba(255,176,32,.06)}
+.drop .big{font-family:var(--display);font-size:1.8rem;text-transform:uppercase;color:var(--fg)}
+.scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--acc),transparent);box-shadow:0 0 18px 4px rgba(255,176,32,.5);top:0;display:none;animation:sweep 1.6s ease-in-out infinite alternate}
+.scan.on{display:block}
+@keyframes sweep{to{top:calc(100% - 3px)}}
+.status{position:absolute;left:10px;bottom:10px;font-family:var(--mono);font-size:.76rem;background:rgba(0,0,0,.72);border:1px solid var(--line);padding:4px 9px;border-radius:4px;display:none}
+.status.on{display:block}
+.live{position:absolute;left:10px;top:10px;font-family:var(--mono);font-size:.72rem;background:rgba(0,0,0,.72);border:1px solid var(--line);padding:3px 8px;border-radius:4px;display:flex;gap:6px;align-items:center}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--alto);animation:bl 1.2s infinite}
+@keyframes bl{50%{opacity:.3}}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.btn{font-size:.9rem;font-weight:600;padding:9px 14px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#1b1200}
+.btn.on{border-color:var(--alto);color:#ffb1a8}
+.btn:disabled{opacity:.5;cursor:default}
+.sp{flex:1}
+.auto{font-size:.82rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:thin}
+.thumbs button{flex:0 0 auto;width:108px;aspect-ratio:4/3;border-radius:8px;overflow:hidden;border:2px solid var(--line);padding:0;cursor:pointer;background:#000;position:relative}
+.thumbs button.on{border-color:var(--acc)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs span{position:absolute;left:4px;bottom:4px;font-family:var(--mono);font-size:.6rem;background:rgba(0,0,0,.75);padding:1px 4px;border-radius:3px}
+.res{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:340px}
+.empty{color:var(--muted);margin:auto;text-align:center;max-width:32ch}
+.skel{height:28px;border-radius:6px;background:linear-gradient(90deg,#181b21,#232833,#181b21);background-size:200% 100%;animation:sh 1.2s linear infinite;width:40%}
+.skel.s2{height:56px;width:100%}.skel.s3{height:90px;width:100%}
+@keyframes sh{to{background-position:-200% 0}}
+.head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nivel{font-family:var(--mono);font-weight:600;font-size:.78rem;letter-spacing:.08em;padding:5px 10px;border-radius:4px}
+.nivel.cumple{background:#103020;color:#9ff0c0}.nivel.observaciones{background:#3a2a07;color:#ffd27a}.nivel.critico{background:#3d0f0b;color:#ffb1a8}
+.score{margin-left:auto;text-align:right;font-family:var(--mono);font-size:.72rem;color:var(--muted);line-height:1.2}
+.score b{display:block;font-family:var(--display);font-size:2rem;color:var(--fg)}
+.resumen{margin:0;font-size:.96rem}
+.mx{width:100%;border-collapse:collapse;font-size:.8rem}
+.mx th{font-family:var(--mono);font-size:.62rem;font-weight:500;color:var(--muted);text-transform:uppercase;padding:4px 2px;text-align:center;vertical-align:bottom}
+.mx th:first-child{text-align:left}
+.mx td{padding:4px 2px;text-align:center;border-top:1px solid var(--line)}
+.mx td:first-child{text-align:left;white-space:nowrap}
+.mx tr{cursor:pointer}
+.mx tr.hl td{background:var(--panel2)}
+.pn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-family:var(--mono);font-weight:600;font-size:.75rem;color:#000;margin-right:4px}
+.st{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;font-weight:700;font-size:.8rem}
+.st.ok{background:#103020;color:#7ff0aa}.st.falta{background:#4a120d;color:#ff8a7d}.st.incorrecto{background:#3a2a07;color:#ffd27a}.st.no_visible{background:#1d2129;color:#6b7383}.st.no_aplica{background:transparent;color:#4b5260}
+.leg{display:flex;gap:10px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)}
+.leg span{display:inline-flex;gap:4px;align-items:center}
+.leg .st{width:16px;height:16px;font-size:.65rem}
+.ps{display:flex;flex-direction:column;gap:6px}
+.p{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;padding:9px;border-radius:9px;background:var(--panel2);border:1px solid transparent}
+.p.hl{border-color:#4a4f5a}
+.p h3{margin:0;font-size:.92rem;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.rk{font-family:var(--mono);font-size:.64rem;padding:1px 6px;border-radius:3px;font-weight:600;color:#000}
+.p p{margin:3px 0 0;font-size:.86rem;color:var(--muted)}
+.p .miss{color:#ffb1a8}
+.p .acc{color:var(--fg)}.p .acc::before{content:"→ ";color:var(--acc)}
+.cond{font-size:.86rem;padding:8px 10px;border-radius:8px;border-left:3px solid var(--medio);background:var(--panel2)}
+.cond b{display:block}
+.cond span{color:var(--muted)}
+.nse{font-size:.8rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+.meta{font-family:var(--mono);font-size:.68rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.modes{border-top:1px solid var(--line)}
+.modes .in{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding-block:22px}
+@media (max-width:820px){.modes .in{grid-template-columns:minmax(0,1fr)}}
+.mode{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.mode b{font-size:.98rem}
+.mode span{color:var(--muted);font-size:.86rem}
+.mode a{margin-top:auto;font-weight:600;font-size:.88rem;color:var(--acc);text-decoration:none}
+.tag{font-family:var(--mono);font-size:.62rem;padding:2px 6px;border-radius:3px;align-self:flex-start}
+.tag.nv{background:#1b2a06;color:#a6e22e}.tag.lo{background:#2a1e05;color:#ffd27a}
+footer{border-top:1px solid var(--line)}
+footer .in{padding-block:16px 30px;font-size:.74rem;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:860px;width:calc(100% - 32px);background:#fff;color:#111}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.rp{padding:22px}
+.rp h2{font-family:var(--display);text-transform:uppercase;margin:0;font-size:1.8rem}
+.rp table{width:100%;border-collapse:collapse;font-size:.8rem;margin:10px 0}
+.rp th,.rp td{border-bottom:1px solid #ddd;padding:5px;text-align:left;vertical-align:top}
+.rp th{font-size:.66rem;color:#666;text-transform:uppercase}
+.rp td.c{text-align:center;font-weight:700}
+.rp img{max-width:100%;border-radius:6px;margin-top:6px}
+.rp .btns{display:flex;gap:8px;margin-top:12px}
+.rp button{padding:8px 14px;border-radius:6px;border:1px solid #ccc;background:#f5f5f5;cursor:pointer}
+@media print{body>*:not(dialog){display:none}dialog{position:static;border:0;max-width:none;width:auto}.rp .btns{display:none}}
 </style>
 </head>
 <body>
-<nav class="top"><div class="in">
-  <a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 19a11 11 0 0 1 22 0" fill="#f5b301"/><rect x="3" y="19" width="26" height="4" rx="2" fill="#f5b301"/><rect x="14" y="7" width="4" height="7" rx="1" fill="#0a0d11"/></svg>Vigía EPP</a>
-  <a class="s" href="../">Servicio y Soluciones Tecnológicas DelaCruz →</a>
+<nav><div class="in">
+  <a class="brand" href="./"><svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 20a11 11 0 0 1 22 0v2H5z" fill="none" stroke="#ffb020" stroke-width="2.4"/><path d="M3 22h26" stroke="#ffb020" stroke-width="2.4" stroke-linecap="round"/><path d="M16 9v6" stroke="#ffb020" stroke-width="2.4"/><circle cx="25" cy="8" r="2" fill="#76b900"/></svg>Vigía EPP</a>
+  <div class="r"><a class="s" href="app.html#sala">Sala de control en tiempo real</a><a class="s" href="../"><span class="lg">Julián Neira Nova · </span>Portafolio →</a></div>
 </div></nav>
 
-<header class="hero"><div class="in">
+<header><div class="in">
   <div>
-    <div class="kick">Seguridad en faena · IA en el borde</div>
-    <h1>Cada persona sin casco, <em>detectada al instante</em></h1>
-    <p class="sub">Vigía mira las cámaras de tu faena, avisa al supervisor en segundos y escribe solo el informe de turno. La IA corre en el equipo de la faena: las imágenes no salen a la nube.</p>
-    <div class="ctas"><a class="p" href="app.html#vivo">Pruébalo con tu cámara</a><a href="app.html#sala">Ver la sala de control</a><a href="https://www.linkedin.com/in/julian-neira-nova/">Conversemos</a></div>
+    <h1>¿Cada persona <em>con su EPP?</em></h1>
+    <p class="sub">Foto, cámara o pantalla. La IA revisa a cada persona según el sector: casco, guantes, lentes, chaleco, calzado, arnés o ropa, y arma el reporte de cumplimiento.</p>
   </div>
-  <div class="demo" aria-label="Demostración en vivo: el modelo analiza fotos de faena en este navegador">
-    <canvas id="hero" width="416" height="416"></canvas>
-    <div class="hud"><span><span class="rec"></span>CAM 02 · Losa nivel 3</span><span id="hclock"></span></div>
-    <div class="cap" id="hcap">cargando IA…</div>
-    <div class="alert" id="halert">⚠ Persona sin casco · aviso enviado al supervisor</div>
-  </div>
+  <span class="nvb">revisión con <b>NVIDIA Nemotron VL</b></span>
 </div></header>
 
-<div class="stats"><div class="in">
-  <div><b id="s1">—</b><span>de las infracciones detectadas en la prueba con fotos reales</span></div>
-  <div><b id="s2">—</b><span>por cuadro, analizado en este navegador</span></div>
-  <div><b>5.000</b><span>fotos reales de obras y faenas para entrenar</span></div>
-  <div><b>0</b><span>imágenes enviadas a la nube</span></div>
-</div></div>
-
-<main>
-<section class="blk pain"><div class="in">
-  <h2>El problema</h2>
-  <p class="lead">El casco es la regla más simple de la faena y una de las que más se rompe. No por mala fe: porque nadie puede mirar todo, todo el tiempo.</p>
-  <div class="cards">
-    <div class="card"><div class="n">01</div><h3>El supervisor no está en todas partes</h3><p>Un frente de trabajo tiene decenas de personas repartidas en cientos de metros. Las cámaras graban, pero nadie las mira en vivo.</p></div>
-    <div class="card"><div class="n">02</div><h3>Las infracciones se conocen tarde</h3><p>Se descubren en una inspección, en una auditoría o después de un accidente. Cuando ya no hay nada que corregir.</p></div>
-    <div class="card"><div class="n">03</div><h3>El reporte se arma a mano</h3><p>Al final del turno alguien junta fotos y anotaciones. Horas de trabajo administrativo que no mejoran la seguridad.</p></div>
+<main class="in">
+  <div class="secs" id="secs" role="radiogroup" aria-label="Sector"></div>
+  <p class="req" id="req"></p>
+  <div class="tool">
+    <div>
+      <div class="stage" id="stage">
+        <canvas id="cv" width="1280" height="800"></canvas>
+        <video id="vid" playsinline muted hidden></video>
+        <div class="scan" id="scan"></div>
+        <div class="drop" id="drop"><div><div class="big">Arrastra una foto aquí</div><div>o usa la cámara, la pantalla o un ejemplo</div></div></div>
+        <div class="live" id="live" hidden><i></i><span id="live-t">CÁMARA</span></div>
+        <div class="status" id="status"></div>
+      </div>
+      <div class="bar">
+        <label class="btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>Subir foto<input type="file" accept="image/*" id="file" hidden></label>
+        <button class="btn" id="b-cam"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Cámara</button>
+        <button class="btn" id="b-scr" title="Comparte una pestaña con un video (por ejemplo de YouTube) y la IA lo revisa"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Pantalla o video</button>
+        <span class="sp"></span>
+        <label class="auto" id="auto-w" hidden><input type="checkbox" id="auto"> ronda cada 10 s</label>
+        <button class="btn p" id="b-snap" hidden>Revisar este cuadro</button>
+      </div>
+      <div class="thumbs" id="thumbs" aria-label="Fotos de ejemplo"></div>
+    </div>
+    <section class="res" id="res" aria-live="polite">
+      <p class="empty">Elige un ejemplo, sube una foto o abre la cámara. El reporte aparece aquí en unos segundos.</p>
+    </section>
   </div>
-</div></section>
-
-<section class="blk feat"><div class="in">
-  <h2>Qué hace Vigía</h2>
-  <p class="lead">Una máquina que hace el trabajo repetitivo de mirar, y deja a las personas lo que importa: corregir.</p>
-  <div class="cards">
-    <div class="card"><div class="n">DETECTA</div><h3>En vivo, cuadro a cuadro</h3><p>Distingue cada cabeza con y sin casco en la imagen de la cámara, en menos de un segundo.</p></div>
-    <div class="card"><div class="n">AVISA</div><h3>Al responsable, con la foto</h3><p>El supervisor del sector recibe el aviso con la imagen y la cámara. Cada incidente queda con estado: nuevo, notificado o cerrado.</p></div>
-    <div class="card"><div class="n">PROTEGE</div><h3>La privacidad de los trabajadores</h3><p>Los rostros se pixelan automáticamente. Lo que importa es el casco, no la identidad.</p></div>
-    <div class="card"><div class="n">REPORTA</div><h3>El informe de turno, solo</h3><p>Cumplimiento por cámara, incidentes con foto y pendientes para el turno siguiente, listo para imprimir o enviar.</p></div>
-  </div>
-</div></section>
-
-<section class="blk"><div class="in proof">
-  <div>
-    <h2>Probado con datos reales</h2>
-    <p class="lead" style="margin-bottom:14px">El modelo de Vigía se entrenó con 4.500 fotos públicas de obras y faenas y se evaluó con 200 fotos que nunca vio: las mismas con las que probé a los modelos de visión de NVIDIA.</p>
-    <p style="margin:0"><a href="../ia-epp/" style="color:var(--acc-ink);font-weight:600">Ver la prueba completa →</a></p>
-  </div>
-  <div style="overflow-x:auto;min-width:0"><table id="t-proof"><thead><tr><th>Modelo</th><th>Infracciones detectadas</th><th>Falsas alarmas</th><th>Dónde corre</th></tr></thead><tbody></tbody></table></div>
-</div></section>
-
-<section class="blk"><div class="in">
-  <h2>Cómo se implementa</h2>
-  <p class="lead">Sin reemplazar cámaras ni comprar servidores grandes. Un piloto acotado, con resultados medibles antes de escalar.</p>
-  <div class="steps">
-    <div class="card"><h3>Diagnóstico</h3><p>Recorremos el frente: qué cámaras hay, dónde están los puntos críticos y cómo llega la señal.</p></div>
-    <div class="card"><h3>Piloto en un frente</h3><p>Vigía se ajusta con fotos de tu propia faena y opera junto al supervisor. Se mide cumplimiento antes y después.</p></div>
-    <div class="card"><h3>Escalamiento</h3><p>Más cámaras, más frentes y otros elementos de protección, con el mismo panel y el mismo informe.</p></div>
-  </div>
-</div></section>
 </main>
 
-<section class="cta"><div class="in">
-  <div><h2>¿Tienes un frente donde el casco es un problema?</h2><p>Muéstrame tu caso y vemos si Vigía calza. Sin compromiso.</p></div>
-  <div class="ctas" style="margin:0"><a class="p" href="https://www.linkedin.com/in/julian-neira-nova/">Escríbeme por LinkedIn</a><a href="app.html#sala">Abrir la consola</a></div>
+<section class="modes"><div class="in">
+  <div class="mode"><span class="tag nv">IA DE NVIDIA · ESTA PÁGINA</span><b>Revisión completa por persona</b><span>Todos los EPP del sector, la tarea que hace cada persona y las condiciones inseguras. Para auditorías, inspecciones planeadas o revisar una foto de terreno.</span></div>
+  <div class="mode"><span class="tag lo">LOCAL · SIN NUBE</span><b>Sala de control en tiempo real</b><span>Detector propio de casco que corre en el equipo de la faena, muchas veces por segundo, sobre cuatro cámaras. Las imágenes no salen de la faena.</span><a href="app.html#sala">Abrir la sala de control →</a></div>
+  <div class="mode"><span class="tag lo">CON TU CÁMARA</span><b>Prueba el detector local</b><span>El mismo detector de casco con la cámara de tu celular o PC. Nada se envía a internet.</span><a href="app.html#vivo">Probar con mi cámara →</a></div>
 </div></section>
 
-<footer><div class="in">
-  <span>Vigía EPP es una demostración de Servicio y Soluciones Tecnológicas DelaCruz SpA · Julián Neira Nova.</span>
-  <span>Imágenes de demostración del conjunto público Hard Hat Workers (CC0), con rostros anonimizados. Detector entrenado con Ultralytics YOLOv8 (AGPL-3.0) y ejecutado con ONNX Runtime Web.</span>
-</div></footer>
+<dialog id="rpd"><div class="rp" id="rp"></div></dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
-<script src="det.js"></script>
+<footer><div class="in">Vigía EPP · Servicio y Soluciones Tecnológicas DelaCruz SpA · Julián Neira Nova. En la revisión con IA, la imagen se envía a la API de NVIDIA a través de un servidor intermedio y no se guarda. Es una ayuda para el prevencionista: no reemplaza la inspección en terreno ni la normativa aplicable (DS 594, Ley 16.744). Fotos de ejemplo vía Openverse: <span id="credits"></span></div></footer>
+
 <script>
-(async () => {
-  const M = {"vigia": {"tp": 93, "fp": 2, "acc": 0.955, "mae": 0.62}, "rows": [{"name": "Vigía EPP (modelo propio)", "tp": 93, "fp": 2, "where": "En el equipo de la faena, sin internet", "me": true}, {"name": "Nemotron 3.5 Super VL 120B", "tp": 100, "fp": 25, "where": "Nube de NVIDIA, 1,5 s por foto"}, {"name": "Nemotron 3 Nano Omni 30B (razonamiento)", "tp": 98, "fp": 16, "where": "Nube de NVIDIA, 13,7 s por foto"}], "heroFrames": ["f00.jpg", "f01.jpg", "f05.jpg", "f09.jpg", "f03.jpg", "f12.jpg", "f14.jpg", "f06.jpg", "f16.jpg", "f20.jpg", "f08.jpg", "f24.jpg", "f27.jpg", "f11.jpg", "f28.jpg", "f29.jpg", "f15.jpg", "f30.jpg", "f31.jpg", "f18.jpg", "f32.jpg", "f38.jpg", "f21.jpg", "f39.jpg", "f23.jpg", "f26.jpg", "f34.jpg", "f36.jpg", "f40.jpg", "f42.jpg", "f44.jpg", "f46.jpg"]};
+(() => {
+  const NV = ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:8787' : 'https://nv-portafolio.jneiranova.workers.dev'), SAMPLES = [{"img": "s/e0.jpg", "sector": "construccion", "credit": "Kanyakumari construction workers · ruffin_ready · CC BY 2.0", "link": "https://www.flickr.com/photos/51668926@N00/5213835620", "ms": 12487, "items": [["casco", "casco de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["guantes", "guantes de trabajo"], ["lentes", "lentes de seguridad"], ["arnes", "arnés con línea de vida (solo si trabaja a más de 1,8 m o en borde abierto)"]], "result": {"resumen": "Ninguno de los trabajadores usa EPP básico (casco, chaleco, calzado, guantes, lentes) ni protección contra caídas, a pesar de trabajar en andamio de bambú a varios metros de altura. El nivel de cumplimiento es crítico y se requiere intervención inmediata.", "nivel": "critico", "personas": [{"n": 1, "caja": [35, 70, 130, 340], "actividad": "trabaja sentado en poste alto del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco de seguridad"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes de trabajo"}, "lentes": {"estado": "falta", "nota": "no usa lentes de seguridad"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin arnés ni línea de vida"}}, "riesgo": "alto", "accion": "detener trabajo, entregar casco, chaleco, calzado, guantes, lentes y arnés con línea de vida"}, {"n": 2, "caja": [185, 330, 280, 610], "actividad": "sube por postes del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin protección contra caídas"}}, "riesgo": "alto", "accion": "prohibir ascenso sin EPP y arnés con línea de vida"}, {"n": 3, "caja": [330, 220, 435, 470], "actividad": "camina sobre viga horizontal del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin arnés"}}, "riesgo": "alto", "accion": "bajar al trabajador y exigir EPP completo antes de reanudar"}, {"n": 4, "caja": [435, 435, 500, 630], "actividad": "se apoya en postes del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin arnés"}}, "riesgo": "alto", "accion": "exigir uso de EPP y protección contra caídas"}, {"n": 5, "caja": [505, 495, 570, 670], "actividad": "se sienta sobre viga del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin arnés"}}, "riesgo": "alto", "accion": "retirar del lugar y capacitar en uso de EPP"}, {"n": 6, "caja": [600, 625, 660, 760], "actividad": "trabaja en nivel intermedio del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin arnés"}}, "riesgo": "alto", "accion": "detener actividad y entregar EPP completo"}, {"n": 7, "caja": [650, 675, 730, 850], "actividad": "trabaja en andamio con brazos en alto", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "falta", "nota": "trabaja en altura sin arnés"}}, "riesgo": "alto", "accion": "exigir EPP y arnés con línea de vida antes de continuar"}, {"n": 8, "caja": [715, 745, 760, 880], "actividad": "trabaja en nivel inferior del andamio", "epp": {"casco": {"estado": "falta", "nota": "no usa casco"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "falta", "nota": "no se ve calzado de seguridad"}, "guantes": {"estado": "falta", "nota": "no usa guantes"}, "lentes": {"estado": "falta", "nota": "no usa lentes"}, "arnes": {"estado": "no_aplica", "nota": "no se confirma trabajo sobre 1,8 m o borde abierto"}}, "riesgo": "medio", "accion": "entregar casco, chaleco, calzado, guantes y lentes"}], "condiciones": [{"titulo": "andamio de bambú sin protección colectiva", "detalle": "estructura artesanal sin barandas, tablones seguros ni sistema contra caídas", "severidad": "alta", "caja": [0, 0, 1000, 1000]}, {"titulo": "trabajo en altura sin arnés ni línea de vida", "detalle": "varios trabajadores sobre vigas y postes a más de 1,8 m sin sistema de detención de caídas", "severidad": "alta", "caja": [35, 70, 760, 880]}, {"titulo": "ausencia total de EPP básico", "detalle": "ningún trabajador visible usa casco, chaleco, calzado, guantes ni lentes de seguridad", "severidad": "alta", "caja": [35, 70, 760, 880]}, {"titulo": "orden y aseo deficiente en andamio", "detalle": "amarras y materiales sueltos que pueden generar tropezón o caída de objetos", "severidad": "media", "caja": [0, 300, 1000, 1000]}], "no_se_puede_evaluar": "no se confirma si el andamio cumple con cálculo estructural, anclajes ni si hay persona competente supervisando; tampoco se puede verificar el estado del calzado por la distancia y resolución de la imagen"}}, {"img": "s/e1.jpg", "sector": "construccion", "credit": "Obreros · Daquella manera · CC0", "link": "https://www.flickr.com/photos/62518311@N00/428896110", "ms": 7898, "items": [["casco", "casco de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["guantes", "guantes de trabajo"], ["lentes", "lentes de seguridad"], ["arnes", "arnés con línea de vida (solo si trabaja a más de 1,8 m o en borde abierto)"]], "result": {"resumen": "Se observa cumplimiento parcial de EPP; faltan lentes y calzado visible en varios trabajadores, y se usa disco de corte sin protección ocular adecuada.", "nivel": "observaciones", "personas": [{"n": 1, "caja": [40, 45, 330, 1000], "actividad": "supervisa o asiste en corte de losa", "epp": {"casco": {"estado": "ok", "nota": "casco amarillo puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado"}, "guantes": {"estado": "ok", "nota": "guantes blancos puestos"}, "lentes": {"estado": "falta", "nota": "no se observan lentes de seguridad"}, "arnes": {"estado": "no_aplica", "nota": "trabaja a nivel de suelo"}}, "riesgo": "medio", "accion": "usar lentes de seguridad y verificar calzado de seguridad"}, {"n": 2, "caja": [260, 300, 570, 1000], "actividad": "sostiene losa mientras se corta", "epp": {"casco": {"estado": "ok", "nota": "casco amarillo puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco naranja reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado"}, "guantes": {"estado": "ok", "nota": "guantes blancos puestos"}, "lentes": {"estado": "falta", "nota": "no se observan lentes de seguridad"}, "arnes": {"estado": "no_aplica", "nota": "trabaja a nivel de suelo"}}, "riesgo": "alto", "accion": "usar lentes de seguridad obligatoriamente al asistir en corte con disco"}, {"n": 3, "caja": [590, 240, 1000, 1000], "actividad": "corta losa con disco abrasivo", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado"}, "guantes": {"estado": "ok", "nota": "guantes blancos puestos"}, "lentes": {"estado": "ok", "nota": "lentes de seguridad puestos"}, "arnes": {"estado": "no_aplica", "nota": "trabaja a nivel de suelo"}}, "riesgo": "medio", "accion": "verificar uso de calzado de seguridad y resguardo del disco"}, {"n": 4, "caja": [390, 60, 590, 500], "actividad": "trabaja sobre estructura metálica", "epp": {"casco": {"estado": "ok", "nota": "casco tipo minero puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado"}, "guantes": {"estado": "no_visible", "nota": "no se ven las manos"}, "lentes": {"estado": "no_visible", "nota": "distancia impide confirmar"}, "arnes": {"estado": "no_aplica", "nota": "no se evidencia trabajo sobre 1,8 m"}}, "riesgo": "medio", "accion": "confirmar uso de calzado y guantes según tarea"}, {"n": 5, "caja": [700, 80, 820, 410], "actividad": "observa desde atrás de la obra", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado"}, "guantes": {"estado": "no_visible", "nota": "no se ven las manos"}, "lentes": {"estado": "no_visible", "nota": "distancia impide confirmar"}, "arnes": {"estado": "no_aplica", "nota": "no se evidencia trabajo en altura"}}, "riesgo": "bajo", "accion": "mantener uso de EPP básico al ingresar al área"}, {"n": 6, "caja": [240, 90, 320, 360], "actividad": "observa la labor de corte", "epp": {"casco": {"estado": "ok", "nota": "casco amarillo puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado"}, "guantes": {"estado": "no_visible", "nota": "no se ven las manos"}, "lentes": {"estado": "no_visible", "nota": "distancia impide confirmar"}, "arnes": {"estado": "no_aplica", "nota": "no se evidencia trabajo en altura"}}, "riesgo": "bajo", "accion": "verificar uso de calzado de seguridad"}], "condiciones": [{"titulo": "corte con disco abrasivo", "detalle": "trabajador corta losa con disco expuesto y chispas posibles", "severidad": "alta", "caja": [500, 700, 820, 1000]}, {"titulo": "falta de protección ocular", "detalle": "dos trabajadores sin lentes cerca de operación de corte", "severidad": "alta", "caja": [40, 45, 570, 1000]}, {"titulo": "calzado no visible", "detalle": "no se confirma uso de calzado de seguridad en trabajadores", "severidad": "media", "caja": [40, 45, 1000, 1000]}], "no_se_puede_evaluar": "marca y certificación de los EPP, estado del resguardo del disco, y calzado de todas las personas por ángulo de la foto"}}, {"img": "s/e2.jpg", "sector": "soldadura", "credit": "Modern Alchemist · Black_Claw · CC BY 2.0", "link": "https://www.flickr.com/photos/24833567@N03/6467618557", "ms": 4176, "items": [["careta", "careta de soldar o protector facial"], ["lentes", "lentes de seguridad"], ["guantes", "guantes de cuero"], ["ropa", "ropa ignífuga, coleto o delantal de cuero"], ["calzado", "calzado de seguridad"], ["auditiva", "protección auditiva (si esmerila o corta)"]], "result": {"resumen": "El trabajador realiza soldadura sin los EPP críticos exigidos por el DS 594, exponiéndose a radiación, chispas y quemaduras.", "nivel": "critico", "personas": [{"n": 1, "caja": [0, 0, 755, 920], "actividad": "soldadura manual con chispas visibles", "epp": {"careta": {"estado": "falta", "nota": "no usa careta ni protector facial durante soldadura"}, "lentes": {"estado": "falta", "nota": "no lleva lentes de seguridad"}, "guantes": {"estado": "falta", "nota": "soldadura a mano descubierta"}, "ropa": {"estado": "incorrecto", "nota": "usa polera y pantalón común, no ropa ignífuga ni delantal de cuero"}, "calzado": {"estado": "incorrecto", "nota": "usa chancletas, no calzado de seguridad"}, "auditiva": {"estado": "no_visible", "nota": "no se confirma uso de protección auditiva"}}, "riesgo": "alto", "accion": "Detener la tarea y usar careta de soldar, lentes de seguridad, guantes de cuero, ropa ignífuga o delantal de cuero y calzado de seguridad antes de continuar."}], "condiciones": [{"titulo": "Chispas sin resguardo", "detalle": "Soldadura en piso sin pantalla ni resguardo que contenga chispas y material fundido.", "severidad": "alta", "caja": [300, 600, 1000, 1000]}, {"titulo": "Calzado inadecuado", "detalle": "Trabajador usa chancletas en zona de soldadura y metalmecánica.", "severidad": "alta", "caja": [0, 820, 220, 930]}, {"titulo": "Orden y aseo", "detalle": "Cables y escombros en el piso que pueden generar tropiezos o contacto con chispas.", "severidad": "media", "caja": [250, 300, 1000, 750]}], "no_se_puede_evaluar": "No se puede confirmar si el área está delimitada ni si existe protección auditiva disponible."}}, {"img": "s/e3.jpg", "sector": "electrico", "credit": "2015 Lineman's Rodeo 05012015 017 · City of Marietta, GA · CC BY 2.0", "link": "https://www.flickr.com/photos/32370233@N05/17193879599", "ms": 15952, "items": [["casco", "casco dieléctrico"], ["guantes", "guantes dieléctricos o de cuero según tarea"], ["careta", "lentes o careta facial contra arco"], ["ropa", "ropa ignífuga de manga larga"], ["calzado", "calzado dieléctrico"], ["arnes", "arnés (solo si trabaja en altura o en poste)"]], "result": {"resumen": "El trabajador en altura usa casco y arnés, pero carece de guantes dieléctricos y calzado visible, exponiéndose a contacto eléctrico y caída.", "nivel": "observaciones", "personas": [{"n": 1, "caja": [85, 250, 820, 1000], "actividad": "trabaja en poste de energía eléctrica sujetando herramienta con barra aislante", "epp": {"casco": {"estado": "ok", "nota": "casco amarillo puesto y sujeto"}, "guantes": {"estado": "falta", "nota": "manos desnudas al manipular herramienta eléctrica"}, "careta": {"estado": "no_visible", "nota": "no se observa protección facial contra arco"}, "ropa": {"estado": "incorrecto", "nota": "manga larga azul, pero no se confirma que sea ignífuga"}, "calzado": {"estado": "no_visible", "nota": "calzado no visible por ángulo y equipo"}, "arnes": {"estado": "ok", "nota": "arnés de cuerpo completo puesto y anclado al poste"}}, "riesgo": "alto", "accion": "Usar guantes dieléctricos, verificar ropa ignífuga y calzado dieléctrico; usar careta facial contra arco eléctrico."}], "condiciones": [{"titulo": "trabajo en altura sin protección colectiva", "detalle": "trabajador suspendido en poste solo con arnés, sin barandilla ni plataforma", "severidad": "alta", "caja": [0, 150, 1000, 1000]}, {"titulo": "manipulación eléctrica sin guantes dieléctricos", "detalle": "manos expuestas al contacto con herramienta y elementos energizados", "severidad": "alta", "caja": [550, 250, 660, 420]}], "no_se_puede_evaluar": "No se confirma si la ropa es ignífuga ni si el calzado es dieléctrico por no verse en la imagen."}}, {"img": "s/e4.jpg", "sector": "agro", "credit": "IMG_1082 · dpu-ucl · CC BY 2.0", "link": "https://www.flickr.com/photos/75746135@N03/34926558253", "ms": 7972, "items": [["guantes", "guantes"], ["respirador", "respirador o mascarilla (si aplica agroquímicos)"], ["lentes", "lentes (si aplica agroquímicos)"], ["ropa", "ropa de manga larga"], ["calzado", "botas o calzado cerrado"], ["sombrero", "protección solar (sombrero o legionario)"]], "result": {"resumen": "Tres trabajadores aplican agroquímicos con mochilas rociadoras; dos usan EPP parcial y uno va sin protección, lo que genera riesgo alto por exposición a químicos y radiación solar.", "nivel": "critico", "personas": [{"n": 1, "caja": [280, 395, 365, 665], "actividad": "rociando cultivo con mochila", "epp": {"guantes": {"estado": "no_visible", "nota": "manos ocultas por vegetación"}, "respirador": {"estado": "ok", "nota": "cubre nariz y boca"}, "lentes": {"estado": "ok", "nota": "protección ocular visible"}, "ropa": {"estado": "ok", "nota": "manga larga azul"}, "calzado": {"estado": "no_visible", "nota": "pies ocultos por pasto"}, "sombrero": {"estado": "ok", "nota": "usa sombrero de ala ancha"}}, "riesgo": "alto", "accion": "verificar uso de guantes resistentes a químicos y calzado cerrado impermeable"}, {"n": 2, "caja": [720, 360, 805, 655], "actividad": "rociando cultivo con mochila", "epp": {"guantes": {"estado": "no_visible", "nota": "manos ocultas por vegetación"}, "respirador": {"estado": "falta", "nota": "no usa protección respiratoria"}, "lentes": {"estado": "no_visible", "nota": "no se confirma uso"}, "ropa": {"estado": "ok", "nota": "manga larga verde"}, "calzado": {"estado": "no_visible", "nota": "pies ocultos por pasto"}, "sombrero": {"estado": "ok", "nota": "usa pañuelo o cobertura en cabeza"}}, "riesgo": "alto", "accion": "proveer respirador, lentes de protección y guantes para manipulación de agroquímicos"}, {"n": 3, "caja": [910, 280, 995, 600], "actividad": "caminando con recipiente amarillo", "epp": {"guantes": {"estado": "falta", "nota": "no lleva guantes"}, "respirador": {"estado": "falta", "nota": "no usa protección respiratoria"}, "lentes": {"estado": "falta", "nota": "no usa protección ocular"}, "ropa": {"estado": "incorrecto", "nota": "camisa de manga corta"}, "calzado": {"estado": "falta", "nota": "camina descalzo"}, "sombrero": {"estado": "falta", "nota": "sin protección solar"}}, "riesgo": "alto", "accion": "prohibir ingreso sin EPP completo: calzado cerrado, ropa manga larga, guantes, lentes, respirador y protección solar"}], "condiciones": [{"titulo": "exposición a agroquímicos", "detalle": "trabajadores rociando sin EPP respiratorio completo y sin guantes visibles", "severidad": "alta", "caja": [270, 360, 830, 680]}, {"titulo": "trabajo descalzo", "detalle": "tercero camina sin calzado en campo con posible contacto con químicos", "severidad": "alta", "caja": [905, 280, 995, 600]}, {"titulo": "ropa inadecuada", "detalle": "camisa de manga corta expone piel a radiación solar y posibles salpicaduras", "severidad": "media", "caja": [930, 320, 990, 480]}], "no_se_puede_evaluar": "no se confirma si el recipiente del tercer trabajador contiene agroquímico; estado de calzado de los dos primeros oculto por el pasto"}}, {"img": "s/e5.jpg", "sector": "mineria", "credit": "Montague Tube · MTAPhotos · CC BY 2.0", "link": "https://www.flickr.com/photos/61135621@N03/8696562754", "ms": 3706, "items": [["casco", "casco de seguridad (con lámpara en subterránea)"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["lentes", "lentes de seguridad"], ["guantes", "guantes de trabajo"], ["auditiva", "protección auditiva (si hay equipos ruidosos)"], ["respirador", "respirador (si hay polvo o gases)"]], "result": {"resumen": "El trabajador visible cumple con la mayoría del EPP básico, pero no se puede confirmar protección auditiva ni respirador, y el calzado no está visible.", "nivel": "observaciones", "personas": [{"n": 1, "caja": [335, 155, 965, 1000], "actividad": "inspección o recorrido subterráneo con linterna", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto correctamente"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "no se ve el calzado en la imagen"}, "lentes": {"estado": "ok", "nota": "lentes de seguridad puestos"}, "guantes": {"estado": "ok", "nota": "guantes de trabajo puestos"}, "auditiva": {"estado": "no_visible", "nota": "no se confirma uso de protección auditiva"}, "respirador": {"estado": "no_visible", "nota": "no se confirma uso de respirador"}}, "riesgo": "medio", "accion": "Verificar uso de protección auditiva y respirador según contaminantes y ruido del sector; confirmar calzado de seguridad."}], "condiciones": [{"titulo": "entorno subterráneo", "detalle": "paredes de roca y tuberías expuestas, posible ruido y polvo", "severidad": "media", "caja": [0, 0, 1000, 1000]}], "no_se_puede_evaluar": "No se puede confirmar si hay equipos ruidosos, polvo o gases que exijan protección auditiva o respirador; tampoco se ve el calzado."}}, {"img": "s/e6.jpg", "sector": "construccion", "credit": "Office building construction worker · runneralan2004 · CC BY 2.0", "link": "https://www.flickr.com/photos/90029322@N00/10092757714", "ms": 3835, "items": [["casco", "casco de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["guantes", "guantes de trabajo"], ["lentes", "lentes de seguridad"], ["arnes", "arnés con línea de vida (solo si trabaja a más de 1,8 m o en borde abierto)"]], "result": {"resumen": "El trabajador cumple con la mayoría del EPP obligatorio, pero no se observan lentes de seguridad ni protección ocular adecuada para soldadura, exponiéndolo a chispas y radiación.", "nivel": "observaciones", "personas": [{"n": 1, "caja": [360, 80, 655, 960], "actividad": "corta metal con amoladora generando chispas en altura", "epp": {"casco": {"estado": "ok", "nota": "casco de seguridad puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante puesto"}, "calzado": {"estado": "no_visible", "nota": "calzado no visible por ángulo y altura"}, "guantes": {"estado": "ok", "nota": "guantes de trabajo puestos"}, "lentes": {"estado": "falta", "nota": "no se observan lentes de seguridad ni careta para soldadura"}, "arnes": {"estado": "ok", "nota": "arnés con línea de vida visible"}}, "riesgo": "alto", "accion": "proveer y exigir uso de lentes de seguridad o careta de soldadura adecuada para trabajo con amoladora"}], "condiciones": [{"titulo": "trabajo en altura sin protección colectiva", "detalle": "trabajador expuesto a caída sin baranda ni red de seguridad", "severidad": "alta", "caja": [380, 400, 650, 960]}, {"titulo": "chispas sin resguardo", "detalle": "amoladora genera chispas sin pantalla ni resguardo para terceros", "severidad": "alta", "caja": [40, 300, 620, 550]}], "no_se_puede_evaluar": "calzado de seguridad no visible por ángulo de la foto"}}, {"img": "s/e7.jpg", "sector": "soldadura", "credit": "Alfred Palmer: Phosphate smelting furnace worker, Muscle Sho · trialsanderrors · CC BY 2.0", "link": "https://www.flickr.com/photos/76204898@N00/2895382484", "ms": 4156, "items": [["careta", "careta de soldar o protector facial"], ["lentes", "lentes de seguridad"], ["guantes", "guantes de cuero"], ["ropa", "ropa ignífuga, coleto o delantal de cuero"], ["calzado", "calzado de seguridad"], ["auditiva", "protección auditiva (si esmerila o corta)"]], "result": {"resumen": "El trabajador no cumple con el EPP requerido para soldadura y metalmecánica; carece de protección ocular, facial, auditiva y calzado de seguridad, exponiéndose a riesgos críticos.", "nivel": "critico", "personas": [{"n": 1, "caja": [85, 195, 390, 870], "actividad": "soldando o cortando metal con chispas intensas", "epp": {"careta": {"estado": "falta", "nota": "no usa careta ni protector facial"}, "lentes": {"estado": "falta", "nota": "no usa lentes de seguridad"}, "guantes": {"estado": "ok", "nota": "usa guantes de cuero"}, "ropa": {"estado": "incorrecto", "nota": "ropa de trabajo común, no ignífuga ni delantal de cuero"}, "calzado": {"estado": "falta", "nota": "calzado común, no calzado de seguridad"}, "auditiva": {"estado": "falta", "nota": "no usa protección auditiva"}}, "riesgo": "alto", "accion": "Entregar y exigir uso de careta de soldar, lentes de seguridad, ropa ignífuga o delantal de cuero, calzado de seguridad y protectores auditivos."}], "condiciones": [{"titulo": "Chispas sin resguardo", "detalle": "Trabajo con soldadura/corte genera chispas y material incandescente sin pantalla ni resguardo para terceros", "severidad": "alta", "caja": [300, 480, 1000, 730]}, {"titulo": "Trabajo en altura sin protección colectiva", "detalle": "Trabaja sobre plataforma metálica elevada sin barandilla ni arnés de seguridad", "severidad": "alta", "caja": [0, 700, 1000, 1000]}], "no_se_puede_evaluar": "No se puede confirmar si existen otros trabajadores cercanos expuestos a las chispas ni si hay ventilación local adecuada."}}, {"img": "s/e8.jpg", "sector": "construccion", "credit": "construction workers (2) · Paul Keller · CC BY 2.0", "link": "https://www.flickr.com/photos/18259771@N00/307442102", "ms": 6589, "items": [["casco", "casco de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["guantes", "guantes de trabajo"], ["lentes", "lentes de seguridad"], ["arnes", "arnés con línea de vida (solo si trabaja a más de 1,8 m o en borde abierto)"]], "result": {"resumen": "Dos trabajadores en obra sin la mayoría del EPP obligatorio; solo usan casco y calzado básico, faltando chaleco reflectante, guantes, lentes y protección auditiva.", "nivel": "critico", "personas": [{"n": 1, "caja": [58, 238, 255, 986], "actividad": "caminando en obra", "epp": {"casco": {"estado": "ok", "nota": "casco de seguridad azul puesto"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco ni ropa reflectante"}, "calzado": {"estado": "ok", "nota": "calzado cerrado visible"}, "guantes": {"estado": "falta", "nota": "no lleva guantes de trabajo"}, "lentes": {"estado": "falta", "nota": "no usa lentes de seguridad"}, "arnes": {"estado": "no_aplica", "nota": "no trabaja a más de 1,8 m ni en borde abierto"}}, "riesgo": "alto", "accion": "Entregar y exigir uso de chaleco reflectante, guantes y lentes de seguridad; verificar calzado de seguridad con puntera."}, {"n": 2, "caja": [190, 303, 402, 1000], "actividad": "caminando sosteniendo casco", "epp": {"casco": {"estado": "incorrecto", "nota": "sostiene el casco en la mano, no lo usa en la cabeza"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco ni ropa reflectante"}, "calzado": {"estado": "no_visible", "nota": "pies fuera de encuadre"}, "guantes": {"estado": "falta", "nota": "no lleva guantes de trabajo"}, "lentes": {"estado": "falta", "nota": "no usa lentes de seguridad"}, "arnes": {"estado": "no_aplica", "nota": "no trabaja a más de 1,8 m ni en borde abierto"}}, "riesgo": "alto", "accion": "Obligar uso correcto de casco en cabeza y entregar chaleco reflectante, guantes y lentes de seguridad."}, {"n": 3, "caja": [715, 350, 745, 535], "actividad": "de pie cerca de señal", "epp": {"casco": {"estado": "no_visible", "nota": "cabeza fuera de encuadre"}, "chaleco": {"estado": "no_visible", "nota": "torso parcialmente oculto"}, "calzado": {"estado": "no_visible", "nota": "cuerpo fuera de encuadre"}, "guantes": {"estado": "no_visible", "nota": "manos no visibles"}, "lentes": {"estado": "no_visible", "nota": "rostro no visible"}, "arnes": {"estado": "no_aplica", "nota": "no se evidencia trabajo en altura"}}, "riesgo": "medio", "accion": "Verificar uso completo de EPP obligatorio al trabajador cercano a la señal."}], "condiciones": [{"titulo": "Falta de EPP obligatorio", "detalle": "Trabajadores sin chaleco reflectante, guantes ni lentes de seguridad en zona de construcción.", "severidad": "alta", "caja": [58, 238, 402, 1000]}, {"titulo": "Casco no usado correctamente", "detalle": "Trabajador sostiene el casco en la mano en lugar de usarlo en la cabeza.", "severidad": "alta", "caja": [190, 303, 402, 1000]}, {"titulo": "Orden y aseo", "detalle": "Escombros y materiales sueltos en zona de tránsito cerca de los trabajadores.", "severidad": "media", "caja": [450, 430, 720, 590]}], "no_se_puede_evaluar": "Calzado del segundo trabajador y estado completo del tercero por encuadre limitado."}}, {"img": "s/e9.jpg", "sector": "construccion", "credit": "Construction Worker Houston Texas 1 · billjacobus1 · CC BY 2.0", "link": "https://www.flickr.com/photos/67513462@N00/122497422", "ms": 5076, "items": [["casco", "casco de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["guantes", "guantes de trabajo"], ["lentes", "lentes de seguridad"], ["arnes", "arnés con línea de vida (solo si trabaja a más de 1,8 m o en borde abierto)"]], "result": {"resumen": "Dos trabajadores en altura sobre estructura de acero y refuerzo; ambos usan casco y arnés, pero falta chaleco reflectante y no se confirma calzado ni lentes, con riesgo de caída sin protección colectiva visible.", "nivel": "observaciones", "personas": [{"n": 1, "caja": [380, 350, 580, 620], "actividad": "guía carga suspendida con grúa", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "falta", "nota": "no usa chaleco reflectante"}, "calzado": {"estado": "no_visible", "nota": "pies ocultos por estructura"}, "guantes": {"estado": "ok", "nota": "guantes al manipular cable"}, "lentes": {"estado": "no_visible", "nota": "no se confirma uso"}, "arnes": {"estado": "ok", "nota": "arnés visible sujeto a línea de vida"}}, "riesgo": "alto", "accion": "usar chaleco reflectante y verificar calzado de seguridad y lentes"}, {"n": 2, "caja": [560, 385, 795, 970], "actividad": "señala y controla carga en borde abierto", "epp": {"casco": {"estado": "ok", "nota": "casco café puesto"}, "chaleco": {"estado": "falta", "nota": "camisa blanca sin chaleco reflectante"}, "calzado": {"estado": "no_visible", "nota": "pies ocultos por encofrado"}, "guantes": {"estado": "ok", "nota": "guantes de trabajo puestos"}, "lentes": {"estado": "no_visible", "nota": "no se confirma uso"}, "arnes": {"estado": "ok", "nota": "arnés con línea de vida en altura"}}, "riesgo": "alto", "accion": "usar chaleco reflectante y verificar calzado de seguridad y lentes"}], "condiciones": [{"titulo": "trabajo en borde abierto", "detalle": "trabajadores sobre estructura sin baranda ni red de seguridad colectiva", "severidad": "alta", "caja": [320, 440, 750, 990]}, {"titulo": "carga suspendida sobre personas", "detalle": "grúa mueve elemento pesado directamente sobre zona de trabajo", "severidad": "alta", "caja": [440, 0, 540, 360]}], "no_se_puede_evaluar": "calzado de seguridad de ambos trabajadores y uso de lentes de seguridad"}}, {"img": "s/e10.jpg", "sector": "industrial", "credit": "You Can See Who Loves Who From Miles Around in This NCDOT Wa · NCDOTcommunications · CC BY 2.0", "link": "https://www.flickr.com/photos/39320593@N03/16458407463", "ms": 5609, "items": [["casco", "casco de seguridad"], ["lentes", "lentes de seguridad"], ["guantes", "guantes de trabajo"], ["calzado", "calzado de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["auditiva", "protección auditiva (si hay ruido)"]], "result": {"resumen": "Dos trabajadores en planta industrial sin EPP básico visible; solo uno usa guantes, faltando casco, lentes, calzado y chaleco reflectante, lo que constituye incumplimiento grave al DS 594.", "nivel": "critico", "personas": [{"n": 1, "caja": [280, 120, 480, 780], "actividad": "observa trabajo con cadena y herramienta", "epp": {"casco": {"estado": "falta", "nota": "usa gorra, no casco de seguridad"}, "lentes": {"estado": "no_visible", "nota": "no se observan lentes de seguridad"}, "guantes": {"estado": "falta", "nota": "manos desprotegidas cerca de cadena"}, "calzado": {"estado": "no_visible", "nota": "parte inferior del cuerpo fuera de encuadre"}, "chaleco": {"estado": "falta", "nota": "usa polera sin prenda reflectante"}, "auditiva": {"estado": "no_visible", "nota": "no se observa protección auditiva"}}, "riesgo": "alto", "accion": "Entregar y exigir uso de casco, lentes, guantes, calzado de seguridad y chaleco reflectante antes de continuar labor."}, {"n": 2, "caja": [600, 75, 950, 760], "actividad": "sostiene herramienta y guantes de trabajo", "epp": {"casco": {"estado": "falta", "nota": "usa gorra camuflada, no casco de seguridad"}, "lentes": {"estado": "no_visible", "nota": "no se observan lentes de seguridad"}, "guantes": {"estado": "ok", "nota": "usa guantes de trabajo amarillos"}, "calzado": {"estado": "no_visible", "nota": "parte inferior del cuerpo fuera de encuadre"}, "chaleco": {"estado": "falta", "nota": "usa sobretodo sin prenda reflectante"}, "auditiva": {"estado": "no_visible", "nota": "no se observa protección auditiva"}}, "riesgo": "alto", "accion": "Sustituir gorra por casco, agregar lentes y chaleco reflectante; verificar calzado y protección auditiva según ruido ambiental."}], "condiciones": [{"titulo": "Falta de EPP básico", "detalle": "Ambos trabajadores carecen de casco, lentes y chaleco reflectante en zona industrial", "severidad": "alta", "caja": [280, 75, 950, 780]}, {"titulo": "Manejo de cadena sin guantes", "detalle": "Trabajador de polera naranja manipula o está cerca de cadena de acero sin guantes de trabajo", "severidad": "alta", "caja": [230, 760, 610, 850]}], "no_se_puede_evaluar": "Calzado de seguridad de ambas personas (cortado por encuadre), nivel de ruido para exigir protección auditiva, y estado de abrochado de EPP no visible."}}, {"img": "s/e11.jpg", "sector": "construccion", "credit": "Engineering work at Cardiff Central railway station · Dai Lygad · CC BY 2.0", "link": "https://www.flickr.com/photos/126337928@N05/20219037724", "ms": 11175, "items": [["casco", "casco de seguridad"], ["chaleco", "chaleco o ropa reflectante"], ["calzado", "calzado de seguridad"], ["guantes", "guantes de trabajo"], ["lentes", "lentes de seguridad"], ["arnes", "arnés con línea de vida (solo si trabaja a más de 1,8 m o en borde abierto)"]], "result": {"resumen": "Los trabajadores usan casco y chaleco reflectante, pero faltan otros EPP básicos como calzado visible, guantes y lentes; el operador de máquina está dentro de la cabina.", "nivel": "observaciones", "personas": [{"n": 1, "caja": [400, 545, 535, 895], "actividad": "trabaja junto a vía férrea", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante naranja"}, "calzado": {"estado": "no_visible", "nota": "calzado oculto por el pantalón"}, "guantes": {"estado": "falta", "nota": "no se observan guantes"}, "lentes": {"estado": "no_visible", "nota": "no se observan lentes"}, "arnes": {"estado": "no_aplica", "nota": "no trabaja a más de 1,8 m ni borde abierto"}}, "riesgo": "medio", "accion": "verificar uso de calzado de seguridad, guantes y lentes de protección"}, {"n": 2, "caja": [280, 545, 420, 735], "actividad": "trabaja junto a vía férrea", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante naranja"}, "calzado": {"estado": "no_visible", "nota": "calzado oculto"}, "guantes": {"estado": "falta", "nota": "no se observan guantes"}, "lentes": {"estado": "no_visible", "nota": "no se observan lentes"}, "arnes": {"estado": "no_aplica", "nota": "no trabaja en altura"}}, "riesgo": "medio", "accion": "verificar uso de calzado de seguridad, guantes y lentes de protección"}, {"n": 3, "caja": [205, 530, 295, 730], "actividad": "trabaja junto a vía férrea", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante naranja"}, "calzado": {"estado": "no_visible", "nota": "calzado oculto"}, "guantes": {"estado": "falta", "nota": "no se observan guantes"}, "lentes": {"estado": "no_visible", "nota": "no se observan lentes"}, "arnes": {"estado": "no_aplica", "nota": "no trabaja en altura"}}, "riesgo": "medio", "accion": "verificar uso de calzado de seguridad, guantes y lentes de protección"}, {"n": 4, "caja": [435, 515, 555, 865], "actividad": "trabaja junto a vía férrea", "epp": {"casco": {"estado": "ok", "nota": "casco blanco puesto"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante naranja"}, "calzado": {"estado": "no_visible", "nota": "calzado oculto"}, "guantes": {"estado": "falta", "nota": "no se observan guantes"}, "lentes": {"estado": "no_visible", "nota": "no se observan lentes"}, "arnes": {"estado": "no_aplica", "nota": "no trabaja en altura"}}, "riesgo": "medio", "accion": "verificar uso de calzado de seguridad, guantes y lentes de protección"}, {"n": 5, "caja": [745, 255, 830, 480], "actividad": "opera maquinaria amarilla", "epp": {"casco": {"estado": "no_visible", "nota": "dentro de cabina, no se confirma casco"}, "chaleco": {"estado": "ok", "nota": "chaleco reflectante naranja visible"}, "calzado": {"estado": "no_visible", "nota": "dentro de cabina"}, "guantes": {"estado": "no_visible", "nota": "dentro de cabina"}, "lentes": {"estado": "no_visible", "nota": "dentro de cabina"}, "arnes": {"estado": "no_aplica", "nota": "dentro de cabina cerrada"}}, "riesgo": "bajo", "accion": "confirmar uso de EPP al descender de la máquina"}], "condiciones": [{"titulo": "vía férrea mojada", "detalle": "superficie resbaladiza junto a rieles y balasto", "severidad": "media", "caja": [0, 720, 620, 1000]}, {"titulo": "maquinaria en movimiento cerca de personas", "detalle": "excavadora operando junto a trabajadores a pie", "severidad": "media", "caja": [280, 155, 950, 850]}], "no_se_puede_evaluar": "calzado, guantes y lentes de los trabajadores a pie por ocultamiento; EPP del operador dentro de cabina"}}];
   const $ = (id) => document.getElementById(id);
-  $('s1').textContent = M.vigia.tp + ' de 100';
-  $('t-proof').querySelector('tbody').innerHTML = M.rows.map((r) => `<tr class="${r.me ? 'me' : ''}"><td>${r.name}</td><td class="num">${r.tp} de 100</td><td class="num">${r.fp} de 100</td><td>${r.where}</td></tr>`).join('');
-  setInterval(() => { $('hclock').textContent = new Date().toLocaleTimeString('es-CL'); }, 1000);
-  const FR = await (await fetch('frames.json')).json();
-  const order = M.heroFrames && M.heroFrames.length ? M.heroFrames : FR;
-  try { await Vigia.load(); } catch (e) { $('hcap').textContent = 'este navegador no pudo cargar la IA'; return; }
-  const cv = $('hero'), ctx = cv.getContext('2d'); let k = 0, msAvg = 0;
-  const tick = async () => {
-    if (!document.hidden) {
-      const img = await new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = 'frames/' + order[k++ % order.length]; });
-      const r = await Vigia.detect(img);
-      Vigia.render(ctx, img, r.boxes, {W: 416, H: 416});
-      msAvg = msAvg ? msAvg * 0.7 + r.ms * 0.3 : r.ms;
-      $('s2').textContent = Math.round(msAvg) + ' ms';
-      $('hcap').textContent = `IA en tu navegador · ${Math.round(r.ms)} ms`;
-      $('halert').classList.toggle('show', r.boxes.some((b) => b.cls === 1));
-    }
-    setTimeout(tick, 2200);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  // misma lista que el servidor, solo para mostrarla antes de analizar
+  const SECT = {
+    construccion: ['Construcción', 'casco, chaleco, calzado, guantes, lentes y arnés en altura'],
+    mineria: ['Minería', 'casco, chaleco, calzado, lentes, guantes, auditiva y respirador según el área'],
+    electrico: ['Eléctrico', 'casco dieléctrico, guantes, careta contra arco, ropa ignífuga, calzado dieléctrico y arnés en poste'],
+    soldadura: ['Soldadura', 'careta, lentes, guantes de cuero, ropa ignífuga, calzado y auditiva si esmerila'],
+    alimentos: ['Alimentos', 'cofia, mascarilla, guantes, ropa limpia y botas'],
+    agro: ['Agrícola', 'guantes, respirador y lentes con agroquímicos, manga larga, botas y protección solar'],
+    industrial: ['Industrial', 'casco, lentes, guantes, calzado, chaleco y auditiva si hay ruido']
   };
-  tick();
+  const LBL = {casco: 'Casco', chaleco: 'Chaleco', calzado: 'Calzado', guantes: 'Guantes', lentes: 'Lentes', arnes: 'Arnés', auditiva: 'Auditiva', respirador: 'Respirador', careta: 'Careta', ropa: 'Ropa', cofia: 'Cofia', mascarilla: 'Mascarilla', sombrero: 'Sol'};
+  const SYM = {ok: '✓', falta: '✕', incorrecto: '!', no_visible: '?', no_aplica: '–'};
+  const NIV = {cumple: 'CUMPLE', observaciones: 'CON OBSERVACIONES', critico: 'CRÍTICO'};
+  const RCOL = {alto: '#ff4d3d', medio: '#f5a524', bajo: '#3ccf7a'};
+  const cv = $('cv'), cx = cv.getContext('2d'), vid = $('vid');
+  let sector = 'construccion', img = null, R = null, items = [], hl = -1, stream = null, srcKind = null, autoT = null, busyNow = false;
+
+  $('secs').innerHTML = Object.entries(SECT).map(([k, [n]]) => `<button class="chip${k === sector ? ' on' : ''}" data-k="${k}" role="radio" aria-checked="${k === sector}">${n}</button>`).join('');
+  const setSector = (k) => { sector = k; [...$('secs').children].forEach((c) => { c.classList.toggle('on', c.dataset.k === k); c.setAttribute('aria-checked', c.dataset.k === k); }); $('req').innerHTML = `EPP que se revisa en <b>${SECT[k][0].toLowerCase()}</b>: ${SECT[k][1]}.`; };
+  $('secs').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (b) setSector(b.dataset.k); });
+  setSector(sector);
+  $('credits').innerHTML = SAMPLES.map((s) => `<a href="${s.link}">${esc(s.credit)}</a>`).join(' · ');
+  $('thumbs').innerHTML = SAMPLES.map((s, i) => `<button data-i="${i}" aria-label="Ejemplo ${i + 1}: ${SECT[s.sector][0]}"><img src="${s.img}" alt="" loading="lazy"><span>${SECT[s.sector][0]}</span></button>`).join('');
+
+  // ---------- dibujo ----------
+  const box = (c, W, H) => { if (!Array.isArray(c) || c.length !== 4) return null; const v = c.map(Number); if (v.some(isNaN)) return null; return [v[0] / 1000 * W, v[1] / 1000 * H, v[2] / 1000 * W, v[3] / 1000 * H]; };
+  const draw = () => {
+    if (!img) return;
+    const iw = img.videoWidth || img.naturalWidth, ih = img.videoHeight || img.naturalHeight, s = Math.min(1, 1280 / Math.max(iw, ih));
+    cv.width = Math.round(iw * s); cv.height = Math.round(ih * s);
+    cx.drawImage(img, 0, 0, cv.width, cv.height);
+    if (!R) return;
+    const W = cv.width, H = cv.height, lw = Math.max(2.5, W / 380), fs = Math.max(15, W / 52);
+    (R.condiciones || []).forEach((c) => { const b = box(c.caja, W, H); if (!b) return; cx.globalAlpha = hl >= 0 ? .2 : .9; cx.setLineDash([lw * 3, lw * 2]); cx.lineWidth = lw; cx.strokeStyle = '#4fd3ef'; cx.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]); cx.setLineDash([]); cx.globalAlpha = 1; });
+    (R.personas || []).forEach((p, i) => {
+      const b = box(p.caja, W, H); if (!b) return;
+      const col = RCOL[p.riesgo] || RCOL.medio, on = hl === i, dim = hl >= 0 && !on;
+      cx.globalAlpha = dim ? .22 : 1;
+      cx.fillStyle = col + (on ? '30' : '12'); cx.fillRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      cx.lineWidth = on ? lw * 1.7 : lw; cx.strokeStyle = col; cx.strokeRect(b[0], b[1], b[2] - b[0], b[3] - b[1]);
+      const miss = Object.entries(p.epp || {}).filter(([, v]) => v && (v.estado === 'falta' || v.estado === 'incorrecto')).map(([k]) => LBL[k] || k);
+      const label = `${i + 1}` + (miss.length ? ` · falta ${miss.slice(0, 3).join(', ')}${miss.length > 3 ? '…' : ''}` : ' · OK');
+      cx.font = `600 ${Math.round(fs * .78)}px IBM Plex Mono, monospace`;
+      const tw = cx.measureText(label).width + 12, th = fs * 1.15, ty = Math.max(0, b[1] - th);
+      const tx = Math.min(W - tw, Math.max(0, b[0]));
+      cx.fillStyle = col; cx.fillRect(tx, ty, tw, th); cx.fillStyle = '#000'; cx.textBaseline = 'middle'; cx.fillText(label, tx + 6, ty + th / 2 + 1);
+      cx.globalAlpha = 1;
+    });
+  };
+
+  // ---------- reporte en pantalla ----------
+  const show = (r, its, m) => {
+    R = r; items = its; hl = -1; draw();
+    const ps = r.personas || [];
+    let ok = 0, tot = 0; ps.forEach((p) => items.forEach(([k]) => { const e = (p.epp || {})[k]; if (!e) return; if (e.estado === 'ok') { ok++; tot++; } else if (e.estado === 'falta' || e.estado === 'incorrecto') tot++; }));
+    const pct = tot ? Math.round(100 * ok / tot) : null;
+    $('res').innerHTML = `<div class="head"><span class="nivel ${esc(r.nivel)}">${NIV[r.nivel] || esc(r.nivel || '').toUpperCase()}</span><button class="btn" id="b-rp"${ps.length ? '' : ' disabled'}>Reporte</button><div class="score">${pct == null ? 'sin datos' : `<b>${pct} %</b>EPP verificable<br>en uso`}</div></div>
+      <p class="resumen">${esc(r.resumen)}</p>
+      ${ps.length ? `<table class="mx"><thead><tr><th>Persona</th>${items.map(([k]) => `<th>${LBL[k] || k}</th>`).join('')}</tr></thead><tbody>${ps.map((p, i) => `<tr data-i="${i}"><td><span class="pn" style="background:${RCOL[p.riesgo] || RCOL.medio}">${i + 1}</span></td>${items.map(([k]) => { const e = (p.epp || {})[k] || {estado: 'no_visible'}; return `<td><span class="st ${esc(e.estado)}" title="${esc((LBL[k] || k) + ': ' + (e.nota || e.estado))}">${SYM[e.estado] || '?'}</span></td>`; }).join('')}</tr>`).join('')}</tbody></table>
+      <div class="leg"><span><i class="st ok">✓</i>en uso</span><span><i class="st falta">✕</i>falta</span><span><i class="st incorrecto">!</i>mal usado</span><span><i class="st no_visible">?</i>no se ve</span><span><i class="st no_aplica">–</i>no aplica</span></div>` : ''}
+      <div class="ps">${ps.map((p, i) => { const miss = Object.entries(p.epp || {}).filter(([, v]) => v && (v.estado === 'falta' || v.estado === 'incorrecto')); return `<div class="p" data-i="${i}"><span class="pn" style="background:${RCOL[p.riesgo] || RCOL.medio}">${i + 1}</span><div><h3>${esc(p.actividad || 'Persona ' + (i + 1))} <span class="rk" style="background:${RCOL[p.riesgo] || RCOL.medio}">riesgo ${esc(p.riesgo)}</span></h3>${miss.length ? `<p class="miss">${miss.map(([k, v]) => `${LBL[k] || k}: ${v.estado === 'falta' ? 'falta' : 'mal usado'}${v.nota ? ' (' + esc(v.nota) + ')' : ''}`).join(' · ')}</p>` : '<p>EPP verificable en uso.</p>'}${p.accion ? `<p class="acc">${esc(p.accion)}</p>` : ''}</div></div>`; }).join('')}</div>
+      ${(r.condiciones || []).map((c) => `<div class="cond" style="border-color:${RCOL[{alta: 'alto', media: 'medio', baja: 'bajo'}[c.severidad]] || RCOL.medio}"><b>${esc(c.titulo)}</b><span>${esc(c.detalle)}</span></div>`).join('')}
+      ${r.no_se_puede_evaluar ? `<div class="nse"><b>La imagen no permite confirmar:</b> ${esc(r.no_se_puede_evaluar)}</div>` : ''}
+      <div class="meta"><span>${esc(m.src)}</span><span>${m.ms ? (m.ms / 1000).toFixed(1).replace('.', ',') + ' s' : ''}</span></div>`;
+    $('res').querySelectorAll('[data-i]').forEach((el) => {
+      el.addEventListener('mouseenter', () => { hl = +el.dataset.i; mark(); });
+      el.addEventListener('mouseleave', () => { hl = -1; mark(); });
+      el.addEventListener('click', () => { hl = hl === +el.dataset.i ? -1 : +el.dataset.i; mark(); });
+    });
+    const b = $('b-rp'); if (b) b.onclick = report;
+  };
+  const mark = () => { draw(); $('res').querySelectorAll('[data-i]').forEach((el) => el.classList.toggle('hl', +el.dataset.i === hl)); };
+  const skel = () => { $('res').innerHTML = '<div class="skel"></div><div class="skel s2"></div><div class="skel s3"></div><div class="skel s3"></div>'; };
+  const busy = (on, msg) => { busyNow = on; $('scan').classList.toggle('on', on); $('status').classList.toggle('on', on); $('status').textContent = msg || ''; };
+  const load = (src) => new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src; });
+
+  // ---------- ejemplos (resultado guardado) ----------
+  $('thumbs').addEventListener('click', async (e) => {
+    const b = e.target.closest('button'); if (!b || busyNow) return;
+    stopStream();
+    const s = SAMPLES[+b.dataset.i]; setSector(s.sector);
+    [...$('thumbs').children].forEach((t) => t.classList.toggle('on', t === b));
+    img = await load(s.img); $('drop').style.display = 'none'; R = null; draw(); skel();
+    busy(true, 'Revisando EPP…'); await new Promise((r) => setTimeout(r, 900)); busy(false);
+    show(s.result, s.items, {src: 'Resultado guardado de la IA para esta foto de ejemplo', ms: s.ms});
+  });
+
+  // ---------- análisis en vivo ----------
+  const toData = (source) => {
+    const iw = source.videoWidth || source.naturalWidth, ih = source.videoHeight || source.naturalHeight, s = Math.min(1, 1280 / Math.max(iw, ih)), c = document.createElement('canvas');
+    c.width = Math.round(iw * s); c.height = Math.round(ih * s); c.getContext('2d').drawImage(source, 0, 0, c.width, c.height);
+    let q = .85, d = c.toDataURL('image/jpeg', q); while (d.length > 1_500_000 && q > .4) { q -= .1; d = c.toDataURL('image/jpeg', q); }
+    return {d, c};
+  };
+  const analyze = async (source, label) => {
+    if (busyNow) return;
+    const {d, c} = toData(source);
+    img = await load(d); $('drop').style.display = 'none'; R = null;
+    if (!stream) draw();
+    [...$('thumbs').children].forEach((t) => t.classList.remove('on'));
+    skel(); busy(true, 'Enviando a NVIDIA…'); const t0 = performance.now();
+    const tick = setInterval(() => { $('status').textContent = `Nemotron VL revisando EPP… ${((performance.now() - t0) / 1000).toFixed(0)} s`; }, 500);
+    try {
+      const r = await fetch(NV + '/epp', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({image: d, sector})});
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'sin respuesta');
+      if (stream) showFrozen();
+      show(j.result, j.items, {src: `${label} · en vivo · ${j.model.split('/').pop()}`, ms: j.ms});
+    } catch (err) {
+      $('res').innerHTML = `<p class="empty">No se pudo revisar la imagen: ${esc(err.message)}. Prueba de nuevo en un minuto.</p>`;
+    } finally { clearInterval(tick); busy(false); }
+  };
+  $('file').addEventListener('change', async (e) => { const f = e.target.files[0]; if (!f || !f.type.startsWith('image/')) return; stopStream(); analyze(await load(URL.createObjectURL(f)), 'Foto subida'); });
+  const st = $('stage');
+  ['dragenter', 'dragover'].forEach((ev) => st.addEventListener(ev, (e) => { e.preventDefault(); $('drop').classList.add('over'); $('drop').style.display = ''; }));
+  ['dragleave', 'drop'].forEach((ev) => st.addEventListener(ev, (e) => { e.preventDefault(); $('drop').classList.remove('over'); if (img) $('drop').style.display = 'none'; }));
+  st.addEventListener('drop', async (e) => { const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) { stopStream(); analyze(await load(URL.createObjectURL(f)), 'Foto subida'); } });
+
+  // ---------- cámara y pantalla ----------
+  // mientras hay video se muestra el video; al revisar, el cuadro queda congelado con las marcas
+  const showLive = () => { vid.hidden = false; cv.style.visibility = 'hidden'; };
+  const showFrozen = () => { vid.hidden = true; cv.style.visibility = 'visible'; };
+  const startStream = async (kind) => {
+    stopStream();
+    try {
+      stream = kind === 'cam'
+        ? await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}, width: {ideal: 1920}, height: {ideal: 1080}}, audio: false})
+        : await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 5}, audio: false});
+    } catch (e) { $('res').innerHTML = `<p class="empty">${kind === 'cam' ? 'No se pudo abrir la cámara' : 'No se compartió ninguna pantalla'}: ${esc(e.message)}.</p>`; stream = null; return; }
+    srcKind = kind; vid.srcObject = stream; await vid.play();
+    stream.getVideoTracks()[0].addEventListener('ended', stopStream);
+    $('drop').style.display = 'none'; showLive(); R = null;
+    $('live').hidden = false; $('live-t').textContent = kind === 'cam' ? 'CÁMARA' : 'PANTALLA COMPARTIDA';
+    $('b-snap').hidden = false; $('auto-w').hidden = false;
+    $(kind === 'cam' ? 'b-cam' : 'b-scr').classList.add('on');
+    $('res').innerHTML = `<p class="empty">${kind === 'cam' ? 'Apunta a las personas y toca <b>Revisar este cuadro</b>.' : 'Reproduce el video (por ejemplo en YouTube) y toca <b>Revisar este cuadro</b>. Con la ronda automática se revisa cada 10 s.'}</p>`;
+  };
+  function stopStream() {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null; srcKind = null; vid.srcObject = null; showFrozen();
+    $('live').hidden = true; $('b-snap').hidden = true; $('auto-w').hidden = true; $('auto').checked = false; clearInterval(autoT);
+    $('b-cam').classList.remove('on'); $('b-scr').classList.remove('on');
+  }
+  $('b-cam').onclick = () => (srcKind === 'cam' ? stopStream() : startStream('cam'));
+  $('b-scr').onclick = () => {
+    if (srcKind === 'scr') return stopStream();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { $('res').innerHTML = '<p class="empty">Compartir pantalla funciona en Chrome, Edge o Firefox de escritorio. En el celular usa la cámara o sube una foto.</p>'; return; }
+    startStream('scr');
+  };
+  $('b-snap').onclick = () => { if (stream) { analyze(vid, srcKind === 'cam' ? 'Cámara' : 'Pantalla compartida').then(() => { if (stream) setTimeout(() => { if (stream && !$('auto').checked) showLive(); }, 6000); }); } };
+  $('auto').onchange = () => { clearInterval(autoT); if ($('auto').checked) { $('b-snap').onclick(); autoT = setInterval(() => { if (stream && !busyNow) $('b-snap').onclick(); }, 10000); } };
+
+  // ---------- reporte imprimible ----------
+  function report() {
+    const ps = R.personas || [], n = 'EPP-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' + String(Math.floor(Math.random() * 900) + 100);
+    const S = {ok: '✓', falta: '✕', incorrecto: '!', no_visible: '?', no_aplica: '–'};
+    $('rp').innerHTML = `<h2>Reporte de cumplimiento EPP ${n}</h2>
+      <p style="margin:2px 0 0;color:#555;font-size:.88rem">Sector: ${SECT[sector][0]} · ${new Date().toLocaleString('es-CL')} · generado por Vigía EPP (IA), verificar en terreno</p>
+      <p><b>Resultado:</b> ${NIV[R.nivel] || esc(R.nivel)}. ${esc(R.resumen)}</p>
+      <table><thead><tr><th>#</th><th>Actividad</th>${items.map(([k]) => `<th>${LBL[k] || k}</th>`).join('')}<th>Riesgo</th><th>Acción</th></tr></thead><tbody>${ps.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.actividad)}</td>${items.map(([k]) => { const e = (p.epp || {})[k] || {estado: 'no_visible'}; return `<td class="c" title="${esc(e.nota)}">${S[e.estado] || '?'}</td>`; }).join('')}<td>${esc(p.riesgo)}</td><td>${esc(p.accion)}</td></tr>`).join('')}</tbody></table>
+      <p style="font-size:.74rem;color:#666">✓ en uso · ✕ falta · ! mal usado · ? no se ve en la imagen · – no aplica a la tarea</p>
+      ${(R.condiciones || []).length ? `<p><b>Condiciones inseguras:</b></p><ul>${R.condiciones.map((c) => `<li><b>${esc(c.titulo)}</b> (${esc(c.severidad)}): ${esc(c.detalle)}</li>`).join('')}</ul>` : ''}
+      <img src="${cv.toDataURL('image/jpeg', .8)}" alt="Imagen revisada con las personas marcadas">
+      <p style="font-size:.8rem;color:#666">Prevencionista: __________________ &nbsp; Supervisor: __________________ &nbsp; Fecha de cierre: __________</p>
+      <div class="btns"><button onclick="document.getElementById('rpd').close()">Cerrar</button><button onclick="window.print()">Imprimir</button></div>`;
+    $('rpd').showModal();
+  }
+  addEventListener('resize', draw);
+  // abre el primer ejemplo para que la página no parta vacía
+  setTimeout(() => $('thumbs').firstElementChild && $('thumbs').firstElementChild.click(), 300);
 })();
 </script>
 </body>
